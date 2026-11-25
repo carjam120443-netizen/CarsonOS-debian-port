@@ -1,0 +1,50 @@
+name: Build CarsonOS Live ISO
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: carsonos-live-iso-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Debian Trixie amd64 ISO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install live-build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            live-build debootstrap squashfs-tools xorriso \
+            isolinux syslinux-common syslinux-utils \
+            grub-pc-bin grub-efi-amd64-bin mtools dosfstools
+
+      - name: Build CarsonOS
+        run: sudo ./scripts/build.sh
+
+      - name: Verify ISO output
+        run: |
+          test -s live-image-amd64.hybrid.iso
+          file live-image-amd64.hybrid.iso
+          sha256sum live-image-amd64.hybrid.iso
+
+      - name: Upload bootable ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: CarsonOS-live-iso
+          path: live-image-amd64.hybrid.iso
+          if-no-files-found: error
+          retention-days: 14
