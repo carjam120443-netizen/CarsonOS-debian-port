@@ -20,7 +20,11 @@ done
 export DEBIAN_FRONTEND=noninteractive
 
 echo "==> Cleaning previous CarsonOS build output"
-lb clean --purge || true
+lb clean --purge
+
+# Keep our source-controlled package lists, but regenerate live-build's
+# derived settings so changed options are never shadowed by stale config.
+rm -f config/binary config/bootstrap config/chroot config/common config/source
 
 echo "==> Configuring Debian 13 Trixie amd64 hybrid live ISO"
 lb config \
@@ -28,6 +32,8 @@ lb config \
   --architectures amd64 \
   --binary-images iso-hybrid \
   --bootloaders grub-efi,syslinux \
+  --uefi-secure-boot auto \
+  --checksums sha256 \
   --archive-areas "main contrib non-free non-free-firmware" \
   --apt-recommends true \
   --apt-indices false \
